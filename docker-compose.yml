@@ -1,0 +1,132 @@
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  node_exporter_textfile:
+
+services:
+  # ---------------------------------------------------------------------
+  # METRICS LANE
+  # ---------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    networks: [monitoring]
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /:/host:ro,rslave
+      - node_exporter_textfile:/host/textfile_collector
+    command:
+      - "--path.rootfs=/host"
+      - "--collector.textfile.directory=/host/textfile_collector"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    networks: [monitoring]
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    restart: unless-stopped
+    ports:
+      - "8085:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    privileged: true
+    networks: [monitoring]
+
+  # ---------------------------------------------------------------------
+  # LOGS LANE
+  # ---------------------------------------------------------------------
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks: [monitoring]
+
+  vector:
+    image: timberio/vector:0.40.0-debian
+    container_name: vector
+    restart: unless-stopped
+    volumes:
+      - ./config/vector/vector.yaml:/etc/vector/vector.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: ["--config", "/etc/vector/vector.yaml"]
+    depends_on: [loki]
+    networks: [monitoring]
+
+  # ---------------------------------------------------------------------
+  # VISUALIZATION
+  # ---------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "9000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://${EC2_PUBLIC_IP:-localhost}:9000
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on: [prometheus, loki]
+    networks: [monitoring]
+
+  # ---------------------------------------------------------------------
+  # SECURITY LANE
+  # ---------------------------------------------------------------------
+  trivy-host-scanner:
+    build: ./trivy-host-scanner
+    container_name: trivy-host-scanner
+    restart: unless-stopped
+    environment:
+      - SCAN_INTERVAL=${TRIVY_HOST_SCAN_INTERVAL:-3600}
+      - OUTPUT_DIR=/output
+    volumes:
+      - /:/host:ro
+      - node_exporter_textfile:/output
+    networks: [monitoring]
+
+  trivy-watcher:
+    build: ./trivy-watcher
+    container_name: trivy-watcher
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+      - "8086:8086"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks: [monitoring]

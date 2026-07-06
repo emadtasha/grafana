@@ -1,0 +1,53 @@
+data_dir: /var/lib/vector
+
+api:
+  enabled: false
+
+sources:
+  docker_host:
+    type: docker_logs
+    docker_host: "unix:///var/run/docker.sock"
+    # This is the requirement that stops the infinite log loop:
+    # every container that is part of the monitoring stack itself is excluded.
+    exclude_containers:
+      - "vector"
+      - "loki"
+      - "grafana"
+      - "prometheus"
+      - "node-exporter"
+      - "cadvisor"
+      - "trivy-host-scanner"
+      - "trivy-watcher"
+
+transforms:
+  parse_logs:
+    type: remap
+    inputs:
+      - "docker_host"
+    source: |
+      # Vector's docker_logs source already sets .timestamp from the
+      # container log stream; normalize it and fall back to now() if missing.
+      .timestamp = to_timestamp(.timestamp) ?? now()
+
+      # If the application emitted JSON, merge its fields in so they
+      # become queryable/structured in Loki instead of one opaque blob.
+      parsed, err = parse_json(.message)
+      if err == null {
+        . = merge(., object!(parsed))
+      }
+
+sinks:
+  loki:
+    type: loki
+    inputs:
+      - "parse_logs"
+    endpoint: "http://loki:3100"
+    encoding:
+      codec: json
+    out_of_order_action: rewrite_timestamp
+    labels:
+      container_name: "{{ container_name }}"
+      image: "{{ image }}"
+      host: "{{ host }}"
+    healthcheck:
+      enabled: true
