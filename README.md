@@ -85,9 +85,10 @@ Then visit:
 Two options, pick what fits your workflow:
 
 **A. Push-to-deploy (included)** — `.github/workflows/deploy.yml` SSHs into the EC2 box on every push to `main` and runs `git pull && docker compose up -d --build`. Set these repo secrets first:
-- `EC2_HOST` → `100.58.158.7`
+- `HOST_IP` → your EC2 public IP address
 - `EC2_SSH_USER` → your EC2 login user (`ubuntu` for Ubuntu AMIs, `ec2-user` for Amazon Linux)
 - `EC2_SSH_KEY` → the private half of the key pair authorized on that instance
+- `GRAFANA_ADMIN_PASSWORD` → optional, defaults to `changeme123`
 
 **B. Manual pull** — just `git clone`/`git pull` on the instance yourself and run `docker compose up -d --build` as shown above. Simpler, no secrets to manage, fine for a single-week task.
 

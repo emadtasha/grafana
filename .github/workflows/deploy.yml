@@ -1,0 +1,71 @@
+name: Deploy monitoring stack to EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HOST_IP: ${{ secrets.HOST_IP }}
+      SSH_USER: ${{ secrets.EC2_SSH_USER || 'ubuntu' }}
+      SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+      GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD || 'changeme123' }}
+      REMOTE_DIR: ~/monitoring-task
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure SSH access
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s
+' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$HOST_IP" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        shell: bash
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "${SSH_USER}@${HOST_IP}" "bash -s" <<'EOF'
+          set -euo pipefail
+          export REMOTE_DIR="$HOME/monitoring-task"
+          export REPO_URL="https://github.com/${{ github.repository }}.git"
+          export HOST_IP="${HOST_IP}"
+          export GRAFANA_ADMIN_PASSWORD="${GRAFANA_ADMIN_PASSWORD}"
+
+          mkdir -p "$REMOTE_DIR"
+
+          if [ -d "$REMOTE_DIR/.git" ]; then
+            cd "$REMOTE_DIR"
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
+          else
+            git clone "$REPO_URL" "$REMOTE_DIR"
+            cd "$REMOTE_DIR"
+            git checkout main
+          fi
+
+          if ! command -v docker >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y docker.io docker-compose-plugin git
+            sudo systemctl enable docker
+            sudo systemctl start docker
+          fi
+
+          cat > .env <<ENV
+          EC2_PUBLIC_IP=$HOST_IP
+          GRAFANA_ADMIN_PASSWORD=$GRAFANA_ADMIN_PASSWORD
+          TRIVY_HOST_SCAN_INTERVAL=3600
+          ENV
+
+          docker compose pull
+          docker compose up -d --build
+          docker compose ps
+          EOF
