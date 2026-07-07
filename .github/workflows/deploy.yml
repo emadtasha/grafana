@@ -23,8 +23,7 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          printf '%s
-' "$SSH_KEY" > ~/.ssh/deploy_key
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "$HOST_IP" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
