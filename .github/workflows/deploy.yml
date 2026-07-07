@@ -31,23 +31,23 @@ jobs:
       - name: Deploy to EC2
         shell: bash
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "${SSH_USER}@${HOST_IP}" "bash -s" <<'EOF'
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "${SSH_USER}@${HOST_IP}" "bash -s" <<EOF
           set -euo pipefail
-          export REMOTE_DIR="$HOME/monitoring-task"
+          export REMOTE_DIR="\$HOME/monitoring-task"
           export REPO_URL="https://github.com/${{ github.repository }}.git"
           export HOST_IP="${HOST_IP}"
           export GRAFANA_ADMIN_PASSWORD="${GRAFANA_ADMIN_PASSWORD}"
 
-          mkdir -p "$REMOTE_DIR"
+          mkdir -p "\$REMOTE_DIR"
 
-          if [ -d "$REMOTE_DIR/.git" ]; then
-            cd "$REMOTE_DIR"
+          if [ -d "\$REMOTE_DIR/.git" ]; then
+            cd "\$REMOTE_DIR"
             git fetch origin main
             git checkout main
             git reset --hard origin/main
           else
-            git clone "$REPO_URL" "$REMOTE_DIR"
-            cd "$REMOTE_DIR"
+            git clone "\$REPO_URL" "\$REMOTE_DIR"
+            cd "\$REMOTE_DIR"
             git checkout main
           fi
 
@@ -58,11 +58,11 @@ jobs:
             sudo systemctl start docker
           fi
 
-          cat > .env <<ENV
-          EC2_PUBLIC_IP=$HOST_IP
-          GRAFANA_ADMIN_PASSWORD=$GRAFANA_ADMIN_PASSWORD
+          cat > .env <<ENVFILE
+          EC2_PUBLIC_IP=\${HOST_IP}
+          GRAFANA_ADMIN_PASSWORD=\${GRAFANA_ADMIN_PASSWORD}
           TRIVY_HOST_SCAN_INTERVAL=3600
-          ENV
+          ENVFILE
 
           docker compose pull
           docker compose up -d --build
