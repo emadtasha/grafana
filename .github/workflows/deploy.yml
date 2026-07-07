@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HOST_IP: ${{ secrets.HOST_IP }}
-      SSH_USER: ${{ secrets.EC2_SSH_USER || 'ubuntu' }}
+      SSH_USER: ${{ secrets.EC2_USER || 'ubuntu' }}
       SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
       GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD || 'changeme123' }}
       REMOTE_DIR: ~/monitoring-task
