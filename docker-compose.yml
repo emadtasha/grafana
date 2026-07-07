@@ -35,10 +35,10 @@ services:
       - "9100:9100"
     volumes:
       - /:/host:ro,rslave
-      - node_exporter_textfile:/host/textfile_collector
+      - node_exporter_textfile:/var/lib/node_exporter/textfile_collector
     command:
       - "--path.rootfs=/host"
-      - "--collector.textfile.directory=/host/textfile_collector"
+      - "--collector.textfile.directory=/var/lib/node_exporter/textfile_collector"
       - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
     networks: [monitoring]
 
