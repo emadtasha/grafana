@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-ENV TRIVY_VERSION=0.53.0
+ENV TRIVY_VERSION=0.56.0
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl ca-certificates tar && \

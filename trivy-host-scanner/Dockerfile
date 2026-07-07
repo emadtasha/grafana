@@ -1,4 +1,4 @@
-FROM aquasec/trivy:0.53.0
+FROM aquasec/trivy:0.56.0
 
 RUN apk add --no-cache bash jq coreutils
 
