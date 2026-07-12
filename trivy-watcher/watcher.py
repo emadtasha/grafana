@@ -118,7 +118,11 @@ def watch_docker_events() -> None:
     log.info("listening for container 'start' events on the docker socket...")
     for event in client.events(decode=True, filters={"type": "container", "event": "start"}):
         try:
-            container_id = event.get("id")
+            # Newer Docker Engine API versions dropped the deprecated
+            # top-level "id"/"status" fields on events; the container ID
+            # now lives under Actor.ID. Fall back to the old field too,
+            # in case this ever runs against an older daemon.
+            container_id = (event.get("Actor") or {}).get("ID") or event.get("id")
             if not container_id:
                 continue
             container = client.containers.get(container_id)

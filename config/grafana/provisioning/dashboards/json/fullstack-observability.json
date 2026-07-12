@@ -1,0 +1,113 @@
+{
+  "title": "Full-Stack Observability & Security",
+  "uid": "fullstack-observability",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    { "type": "row", "title": "Host Metrics", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 100, "collapsed": false, "panels": [] },
+
+    {
+      "id": 1, "type": "gauge", "title": "Host CPU Usage",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100,
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 90 }
+        ] } }, "overrides": [] },
+      "targets": [{ "expr": "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "refId": "A" }]
+    },
+    {
+      "id": 2, "type": "gauge", "title": "Host Memory Usage",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100,
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 90 }
+        ] } }, "overrides": [] },
+      "targets": [{ "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100", "refId": "A" }]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Host CPU Usage Over Time",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] },
+      "targets": [{ "expr": "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "CPU %", "refId": "A" }]
+    },
+
+    { "type": "row", "title": "Container Metrics (cAdvisor)", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 }, "id": 101, "collapsed": false, "panels": [] },
+
+    {
+      "id": 10, "type": "stat", "title": "Running Containers",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "count(container_last_seen{name!=\"\"})", "refId": "A" }]
+    },
+    {
+      "id": 11, "type": "timeseries", "title": "Container CPU Usage by Container",
+      "gridPos": { "h": 8, "w": 10, "x": 4, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "targets": [{ "expr": "sum(rate(container_cpu_usage_seconds_total{name!=\"\"}[5m])) by (name)", "legendFormat": "{{name}}", "refId": "A" }]
+    },
+    {
+      "id": 12, "type": "timeseries", "title": "Container Memory Usage by Container",
+      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "sum(container_memory_usage_bytes{name!=\"\"}) by (name)", "legendFormat": "{{name}}", "refId": "A" }]
+    },
+
+    { "type": "row", "title": "Security Lane (Trivy)", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 }, "id": 102, "collapsed": false, "panels": [] },
+
+    {
+      "id": 20, "type": "bargauge", "title": "Container Image Vulnerabilities (trivy-watcher, by severity)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [
+        { "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 10 }
+      ] } }, "overrides": [] },
+      "targets": [{ "expr": "trivy_watcher_vulnerabilities", "legendFormat": "{{container_name}} / {{severity}}", "refId": "A" }]
+    },
+    {
+      "id": 21, "type": "bargauge", "title": "Host Filesystem Vulnerabilities (trivy-host-scanner, by severity)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [
+        { "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 10 }
+      ] } }, "overrides": [] },
+      "targets": [{ "expr": "trivy_host_vulnerabilities_total", "legendFormat": "{{severity}}", "refId": "A" }]
+    },
+    {
+      "id": 22, "type": "stat", "title": "Total Watcher Scans Performed",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 25 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "trivy_watcher_scans_total", "refId": "A" }]
+    },
+    {
+      "id": 23, "type": "stat", "title": "Last Host Scan Age",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 25 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [{ "expr": "time() - trivy_host_scan_timestamp_seconds", "refId": "A" }]
+    },
+
+    { "type": "row", "title": "Logs Lane (Loki)", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 29 }, "id": 103, "collapsed": false, "panels": [] },
+
+    {
+      "id": 30, "type": "timeseries", "title": "Log Volume by Container",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 30 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{ "expr": "sum(count_over_time({container_name=~\".+\"}[$__interval])) by (container_name)", "legendFormat": "{{container_name}}", "refId": "A" }]
+    },
+    {
+      "id": 31, "type": "logs", "title": "Live Log Stream (all monitored containers)",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 36 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "options": { "showTime": true, "wrapLogMessage": true, "sortOrder": "Descending" },
+      "targets": [{ "expr": "{container_name=~\".+\"}", "refId": "A" }]
+    }
+  ]
+}

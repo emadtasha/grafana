@@ -25,9 +25,8 @@ transforms:
     inputs:
       - "docker_host"
     source: |
-      # Vector's docker_logs source already sets .timestamp from the
-      # container log stream; normalize it and fall back to now() if missing.
-      .timestamp = to_timestamp(.timestamp) ?? now()
+      # Vector's docker_logs source always sets .timestamp natively from
+      # the container log stream, so no normalization is needed here.
 
       # If the application emitted JSON, merge its fields in so they
       # become queryable/structured in Loki instead of one opaque blob.
