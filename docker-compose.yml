@@ -54,6 +54,10 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
+      - /run/containerd/containerd.sock:/run/containerd/containerd.sock:ro
+    command:
+      - "--containerd=/run/containerd/containerd.sock"
+      - "--containerd-namespace=moby"
     devices:
       - /dev/kmsg
     privileged: true

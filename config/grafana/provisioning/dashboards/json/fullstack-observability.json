@@ -50,14 +50,14 @@
       "gridPos": { "h": 8, "w": 10, "x": 4, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
-      "targets": [{ "expr": "sum(rate(container_cpu_usage_seconds_total{name!=\"\"}[5m])) by (name)", "legendFormat": "{{name}}", "refId": "A" }]
+      "targets": [{ "expr": "sum(rate(container_cpu_usage_seconds_total{name!=\"\"}[5m])) by (image)", "legendFormat": "{{image}}", "refId": "A" }]
     },
     {
       "id": 12, "type": "timeseries", "title": "Container Memory Usage by Container",
       "gridPos": { "h": 8, "w": 10, "x": 14, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-      "targets": [{ "expr": "sum(container_memory_usage_bytes{name!=\"\"}) by (name)", "legendFormat": "{{name}}", "refId": "A" }]
+      "targets": [{ "expr": "sum(container_memory_usage_bytes{name!=\"\"}) by (image)", "legendFormat": "{{image}}", "refId": "A" }]
     },
 
     { "type": "row", "title": "Security Lane (Trivy)", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 }, "id": 102, "collapsed": false, "panels": [] },
