@@ -14,7 +14,7 @@ while true; do
   START_TS=$(date +%s)
   echo "[trivy-host-scanner] $(date -u +%FT%TZ) running scan of /host..."
 
-  if ! RESULT_JSON=$(trivy fs --scanners vuln --format json --quiet /host 2>/tmp/trivy_err.log); then
+  if ! RESULT_JSON=$(trivy fs --scanners vuln --format json --quiet --skip-dirs "/host/proc,/host/sys,/host/dev,/host/run,/host/tmp,/host/var/lib/docker" /host 2>/tmp/trivy_err.log); then
     echo "[trivy-host-scanner] trivy scan failed:"
     cat /tmp/trivy_err.log || true
     sleep "${SCAN_INTERVAL}"
